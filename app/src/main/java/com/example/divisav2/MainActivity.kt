@@ -23,6 +23,7 @@ import com.example.divisav2.Application.RoomApp
 import com.example.divisav2.Data.Entities.MonedaEntity
 import com.example.divisav2.Data.Modelo.Moneda
 import com.example.divisav2.ViewModel.MainViewModel
+import com.example.divisav2.ViewModel.MainViewModelFactory
 import com.example.divisav2.ui.theme.DivisaV2Theme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -31,8 +32,9 @@ import java.util.Date
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
-    private val viewModel: MainViewModel by viewModels()
-
+    private val viewModel: MainViewModel by viewModels {
+        MainViewModelFactory(RoomApp.database.exchangeDAO())
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -91,22 +93,26 @@ class MainActivity : ComponentActivity() {
     private fun fetchSavedData() {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                // Llama al método del ViewModel para obtener las monedas
+                // met del ViewModel para obtener las monedas
                 viewModel.getAllExchanges()
 
                 // Observar el flujo de datos almacenados
                 viewModel.monedas.collect { monedas ->
+                    if (monedas.isEmpty()) {
+                        Log.d("DB_Info", "No hay datos en la base de datos.")
+                    } else {
                     monedas.forEach { moneda ->
                         Log.d(
-                            "DB_DATA", "Código: ${moneda.currencyCode}, " +
+                            "DB_Datos", "Código: ${moneda.currencyCode}, " +
                                     "Tasa: ${moneda.exchangeRate}, " +
                                     "Base: ${moneda.baseCurrency}, " +
                                     "Fecha: ${moneda.syncDate}"
                         )
-                    }
+                    } }
                 }
+                Log.d("DB_FETCH", "----------- Datos obtenidos correctamente de la base de datos :)")
             } catch (e: Exception) {
-                Log.e("DB_ERROR", "Error al obtener los datos de la base de datos: ${e.message}")
+                Log.e("DB_ERROR :V", "Error al obtener los datos de la base de datos: ${e.message}")
             }
         }
     }
