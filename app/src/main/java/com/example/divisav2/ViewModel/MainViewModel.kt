@@ -4,25 +4,27 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.divisav2.Data.Dao.ExchangeDAO
 import com.example.divisav2.Data.Entities.MonedaEntity
+import com.example.divisav2.Data.Repository.ExchangeRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class MainViewModel(private val exchangeDAO: ExchangeDAO): ViewModel() {//14:00
+class MainViewModel(private val repository: ExchangeRepository): ViewModel() {//14:00
 
     private val _monedas = MutableStateFlow<List<MonedaEntity>>(emptyList())
     val monedas: StateFlow<List<MonedaEntity>> get() = _monedas
 
-    fun insertAllExchanges(monedas: List<MonedaEntity>) { // Para insertar en la base de datos
+    fun insertAllExchanges(monedas: List<MonedaEntity>) {
         viewModelScope.launch(Dispatchers.IO) {
-            exchangeDAO.insertInfo(monedas)
+            repository.insertAll(monedas)
         }
     }
 
-    fun getAllExchanges() { // Para mostrar lo que se tiene actualmente en la base de datos
+
+    fun getAllExchanges() {
         viewModelScope.launch(Dispatchers.IO) {
-            _monedas.value = exchangeDAO.getAllMonedas()
+            _monedas.value = repository.getAll()
         }
     }
 }

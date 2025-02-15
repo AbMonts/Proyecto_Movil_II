@@ -22,10 +22,13 @@ import com.example.divisav2.APIService.ExchangeAPI
 import com.example.divisav2.Application.RoomApp
 import com.example.divisav2.Data.Entities.MonedaEntity
 import com.example.divisav2.Data.Modelo.Moneda
+import com.example.divisav2.Data.Repository.ExchangeRepository
 import com.example.divisav2.ViewModel.MainViewModel
 import com.example.divisav2.ViewModel.MainViewModelFactory
+import com.example.divisav2.ui.Screens.MainScreen
 import com.example.divisav2.ui.theme.DivisaV2Theme
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -37,18 +40,18 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
+
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         setContent {
             DivisaV2Theme {
-
-
+                MainScreen(viewModel)
             }
-
         }
-                //fetchExchangeRates()
-            fetchSavedData()
+         //fetchExchangeRates()//desde la api, obtiene datis
+        fetchSavedData() //desde la base de datos localll con room
         }
 
 
@@ -61,7 +64,7 @@ class MainActivity : ComponentActivity() {
                 // Convierte el timestamp en formato legible
                 val syncDate = formatUnixTimestamp(response.timestamp)
 
-                // Mapea la respuesta a una lista de MonedaEntity
+                // Mapea la respuesta a una lista de monedaEntity
                 val monedas = response.conversionRates.map { (code, rate) ->
                     MonedaEntity(
                         currencyCode = code,
@@ -81,7 +84,7 @@ class MainActivity : ComponentActivity() {
                 }
 
                 // Inserta las monedas en la base de datos
-                RoomApp.database.exchangeDAO().insertInfo(monedas)
+                viewModel.insertAllExchanges(monedas)
                 Log.d("DB_SAVE", "Datos guardados correctamente en la base de datos")
 
             } catch (e: Exception) {
@@ -91,31 +94,31 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun fetchSavedData() {
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch {
             try {
-                // met del ViewModel para obtener las monedas
                 viewModel.getAllExchanges()
 
-                // Observar el flujo de datos almacenados
-                viewModel.monedas.collect { monedas ->
+                viewModel.monedas.collectLatest { monedas -> // da solo el último valor, con solo collect seria todos :0
                     if (monedas.isEmpty()) {
                         Log.d("DB_Info", "No hay datos en la base de datos.")
                     } else {
-                    monedas.forEach { moneda ->
-                        Log.d(
-                            "DB_Datos", "Código: ${moneda.currencyCode}, " +
-                                    "Tasa: ${moneda.exchangeRate}, " +
-                                    "Base: ${moneda.baseCurrency}, " +
-                                    "Fecha: ${moneda.syncDate}"
-                        )
-                    } }
+                        monedas.forEach { moneda ->
+                            Log.d(
+                                "DB_Datos", "Código: ${moneda.currencyCode}, " +
+                                        "Tasa: ${moneda.exchangeRate}, " +
+                                        "Base: ${moneda.baseCurrency}, " +
+                                        "Fecha: ${moneda.syncDate}"
+                            )
+                        }
+                    }
                 }
                 Log.d("DB_FETCH", "----------- Datos obtenidos correctamente de la base de datos :)")
             } catch (e: Exception) {
-                Log.e("DB_ERROR :V", "Error al obtener los datos de la base de datos: ${e.message}")
+                Log.e("DB_ERROR", "Error al obtener los datos de la base de datos: ${e.message}")
             }
         }
     }
+
 
     private fun formatUnixTimestamp(timestamp: Long): String {
         val date = java.util.Date(timestamp * 1000)

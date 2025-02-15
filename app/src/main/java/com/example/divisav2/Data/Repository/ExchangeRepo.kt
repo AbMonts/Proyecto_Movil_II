@@ -1,25 +1,49 @@
 package com.example.divisav2.Data.Repository
 
+import com.example.divisav2.APIService.ExchangeAPI
+import com.example.divisav2.Data.Dao.ExchangeDAO
 import com.example.divisav2.Data.Entities.MonedaEntity
-import kotlinx.coroutines.flow.Flow
 
-interface ExchangeRepository {
 
-    // Insertar un tipo de cambio
-    suspend fun insertExchangeRate(rate: MonedaEntity)
+class ExchangeRepository(
+    private val exchangeDAO: ExchangeDAO
+) {
+    suspend fun getAll(): List<MonedaEntity> {
+        return exchangeDAO.getAllMonedas()
+    }
+    suspend fun insertAll(monedas: List<MonedaEntity>) {
+        exchangeDAO.insertInfo(monedas)
+    }
 
-    // Obtener tipos de cambio por fecha como Flow
-    fun getRatesByDate(date: String): Flow<List<MonedaEntity>>
+    suspend fun deleteAll() {
+        exchangeDAO.deleteAllRates()
+    }
 
-    // Obtener tipos de cambio desde una fecha hasta ahora
-    fun getRatesFromDate(startDate: String): Flow<List<MonedaEntity>>
+    suspend fun syncData() {
+        try {
+            val apiResponse = ExchangeAPI.service.getExchangeRates()
 
-    // Obtener todos los tipos de cambio
-    fun getAllRates(): Flow<List<MonedaEntity>>
+            val baseCurrency = apiResponse.baseCode
+            val timestamp = System.currentTimeMillis()
+            val syncDate = java.text.SimpleDateFormat("yyyy-MM-dd").format(java.util.Date())
 
-    // Eliminar tipos de cambio por una fecha específica
-    suspend fun deleteRatesByDate(date: String)
 
-    // Eliminar todos los tipos de cambio
-    suspend fun deleteAllRates()
+            val rates = apiResponse.conversionRates.map { (currency, rate) ->
+                MonedaEntity(
+                    currencyCode = currency,
+                    exchangeRate = rate,
+                    baseCurrency = baseCurrency,
+                    timestamp = timestamp,
+                    syncDate = syncDate
+                )
+            }
+
+
+            deleteAll()
+            insertAll(rates)
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }
