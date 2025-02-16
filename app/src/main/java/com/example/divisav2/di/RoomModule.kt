@@ -25,4 +25,7 @@ object RoomModule {
     @Provides
     fun provideExchangeDAO(db: ExchangeDB) = db.exchangeDAO()
 
+
+
+
 }

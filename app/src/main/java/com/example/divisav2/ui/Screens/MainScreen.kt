@@ -38,11 +38,18 @@ fun MainScreen(viewModel: MainViewModel) {
                 .padding(paddingValues)
         ) {
             Button(
-                onClick = { viewModel.getAllExchanges() },
+                onClick = { viewModel.getAllExchanges() },//debe cargar los de la base de datos
                 modifier = Modifier.padding(16.dp)
             ) {
                 Text("Cargar Monedas")
             }
+            Button(
+                onClick = { viewModel.syncNow() },//carga y muestra los datos desde la api
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text("Sincronizar Ahora")
+            }
+
 
             LazyColumn(modifier = Modifier.padding(16.dp)) {
                 items(monedasState.value) { moneda ->

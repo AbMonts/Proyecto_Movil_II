@@ -21,6 +21,9 @@ interface ExchangeDAO {
     @Query("SELECT * FROM exchange_rates")
     suspend fun getAllMonedas(): List<MonedaEntity>
 
+    @Query("SELECT * FROM exchange_rates")
+    fun getAllFlow(): Flow<List<MonedaEntity>>
+
     // Eliminar todos los registros
     @Query("DELETE FROM exchange_rates")
     suspend fun deleteAllRates()

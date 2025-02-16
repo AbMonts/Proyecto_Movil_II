@@ -18,6 +18,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.lifecycleScope
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.example.divisav2.APIService.ExchangeAPI
 import com.example.divisav2.Application.RoomApp
 import com.example.divisav2.Data.Entities.MonedaEntity
@@ -25,23 +30,23 @@ import com.example.divisav2.Data.Modelo.Moneda
 import com.example.divisav2.Data.Repository.ExchangeRepository
 import com.example.divisav2.ViewModel.MainViewModel
 import com.example.divisav2.ViewModel.MainViewModelFactory
+import com.example.divisav2.Workers.SyncExchangeWorker
 import com.example.divisav2.ui.Screens.MainScreen
 import com.example.divisav2.ui.theme.DivisaV2Theme
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    private val viewModel: MainViewModel by viewModels {
-        MainViewModelFactory(RoomApp.database.exchangeDAO())
-    }
+    private val viewModel: MainViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
-
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
@@ -50,8 +55,9 @@ class MainActivity : ComponentActivity() {
                 MainScreen(viewModel)
             }
         }
-         //fetchExchangeRates()//desde la api, obtiene datis
-        fetchSavedData() //desde la base de datos localll con room
+                //fetchExchangeRates()//desde la api, obtiene datis (manual)
+        //fetchSavedData() //desde la base de datos localll con room
+        checkWorkerStatus()
         }
 
 
@@ -125,5 +131,17 @@ class MainActivity : ComponentActivity() {
         val format = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
         return format.format(date)
     }
-}
 
+    private fun checkWorkerStatus() {
+        lifecycleScope.launch {
+            val workInfos = WorkManager.getInstance(applicationContext)
+                .getWorkInfosForUniqueWork("SyncExchangeWorker")
+                .get() // Obtiene el estado actual del Worker
+
+            workInfos.forEach { workInfo ->
+                Log.d("WorkerStatus", "------- > Estado: ${workInfo.state}, Última ejecución: ${workInfo.runAttemptCount}")
+            }
+        }
+    }
+
+}
