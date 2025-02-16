@@ -4,9 +4,12 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import androidx.work.await
 import com.example.divisav2.Data.Dao.ExchangeDAO
 import com.example.divisav2.Data.Entities.MonedaEntity
 import com.example.divisav2.Data.Repository.ExchangeRepository
@@ -16,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @HiltViewModel
@@ -30,7 +34,9 @@ class MainViewModel@Inject constructor(
     val ultimaActualizacion: StateFlow<String> get() = _ultimaActualizacion
 
     init {
-        observeDatabaseChanges() // Observar cambios en la BD
+        observeDatabaseChanges()
+        scheduleHourlySync()
+        checkWorkStatus()
     }
 
     private fun observeDatabaseChanges() {
@@ -42,6 +48,17 @@ class MainViewModel@Inject constructor(
             }
         }
     }
+    fun checkWorkStatus() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val workInfos = workManager.getWorkInfosByTag("SyncExchangeWorker").get()
+
+            workInfos.forEach { workInfo ->
+                Log.d("WorkManagerStatus", "Work ID: ${workInfo.id}, Estado: ${workInfo.state}")
+            }
+        }
+    }
+
+
 
     fun insertAllExchanges(monedas: List<MonedaEntity>) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -59,6 +76,27 @@ class MainViewModel@Inject constructor(
         }
     }
 
+//funcion para el worker que se ejecuta cada hora
+    fun scheduleHourlySync() {
+        val workRequest = PeriodicWorkRequestBuilder<SyncExchangeWorker>(
+            1, TimeUnit.HOURS // Se ejecutará cada 1 hora
+        )
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED) // Solo si hay internet
+                    .build()
+            )
+            .build()
+
+        workManager.enqueueUniquePeriodicWork(
+            "HourlySyncWorker",
+            ExistingPeriodicWorkPolicy.KEEP, // Evita duplicados
+            workRequest
+        )
+        Log.d("WorkManager", "Sincronizacion programada cada hora")
+    }
+
+//funcion para el worker que se ejecuta manualmente
     fun syncNow() {
         val workRequest = OneTimeWorkRequestBuilder<SyncExchangeWorker>()
             .setConstraints(
@@ -97,4 +135,13 @@ class MainViewModel@Inject constructor(
         _ultimaActualizacion.value = fechaActual
         Log.d("DB_Fecha", "Última actualización: $fechaActual")
     }
+
+    fun clearDatabase() {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.deleteAll()
+            _monedas.value = emptyList()
+            Log.d("DB_Clear", "Base de datos eliminada correctamente.")
+        }
+    }
+
 }

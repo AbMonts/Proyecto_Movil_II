@@ -18,11 +18,13 @@ interface ExchangeDAO {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertInfo(monedas: List<MonedaEntity>): List<Long>
 
-    @Query("SELECT * FROM exchange_rates")
+    @Query("SELECT * FROM exchange_rates ORDER BY sync_date DESC")
     suspend fun getAllMonedas(): List<MonedaEntity>
 
-    @Query("SELECT * FROM exchange_rates")
+    @Query("SELECT * FROM exchange_rates ORDER BY sync_date DESC")
     fun getAllFlow(): Flow<List<MonedaEntity>>
+
+
 
     // Eliminar todos los registros
     @Query("DELETE FROM exchange_rates")

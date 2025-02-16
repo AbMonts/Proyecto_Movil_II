@@ -49,6 +49,12 @@ fun MainScreen(viewModel: MainViewModel) {
             ) {
                 Text("Sincronizar Ahora")
             }
+            Button(
+                onClick = { viewModel.clearDatabase() },
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text("Eliminar Datos")
+            }
 
 
             LazyColumn(modifier = Modifier.padding(16.dp)) {
