@@ -17,7 +17,7 @@ import java.util.Date
 class SyncExchangeWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted workerParameters: WorkerParameters,
-    private val repository: ExchangeRepository // Inyectar el repositorio
+    private val repository: ExchangeRepository
 ) : Worker(context, workerParameters) {
 
     override fun doWork(): Result {
@@ -28,17 +28,16 @@ class SyncExchangeWorker @AssistedInject constructor(
             Result.success()
         } catch (e: Exception) {
             Log.e("SyncExchangeWorker", "Error sincronizando tasas de cambio", e)
-            Result.retry() // Reintentar si falla
+            Result.retry()
         }
     }
 
     private fun syncExchangeRates() {
         Log.d("SyncExchangeWorker", "Llamando a la API para actualizar tasas de cambio...")
 
-        runBlocking { // Bloquear el Worker hasta que termine la ejecución
+        runBlocking {
             try {
-                val response = ExchangeAPI.service.getExchangeRates() // Llamada a la API
-                // Definir la fecha de sincronización antes de usarla
+                val response = ExchangeAPI.service.getExchangeRates()
                 val syncDate = Date().toString()
 
                 val monedas = response.conversionRates.map { (code, rate) ->
@@ -52,7 +51,8 @@ class SyncExchangeWorker @AssistedInject constructor(
                 }
                 // Imprimir en Logcat
                 monedas.forEach { moneda ->
-                    Log.d("EXCHANGE_DATA", "Código: ${moneda.currencyCode}, " +
+                    Log.d("EXCHANGE_DATA",
+                        "Código: ${moneda.currencyCode}, " +
                             "Tasa: ${moneda.exchangeRate}, " +
                             "Base: ${moneda.baseCurrency}, " +
                             "Fecha: ${moneda.syncDate}")

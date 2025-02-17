@@ -9,8 +9,6 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import androidx.work.await
-import com.example.divisav2.Data.Dao.ExchangeDAO
 import com.example.divisav2.Data.Entities.MonedaEntity
 import com.example.divisav2.Data.Repository.ExchangeRepository
 import com.example.divisav2.Workers.SyncExchangeWorker
@@ -19,6 +17,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -30,30 +31,38 @@ class MainViewModel@Inject constructor(
     private val _monedas = MutableStateFlow<List<MonedaEntity>>(emptyList())
     val monedas: StateFlow<List<MonedaEntity>> get() = _monedas
 
-    private val _ultimaActualizacion = MutableStateFlow("")
-    val ultimaActualizacion: StateFlow<String> get() = _ultimaActualizacion
+    private val _ultimaInsercion = MutableStateFlow(0L) //para la base de datos
+    val ultimaInsercion: StateFlow<Long> get() = _ultimaInsercion
+
+    private val _ultimaConsultaApi = MutableStateFlow(0L) //para cuando se sincronice a la api
+    val ultimaConsultaApi: StateFlow<Long> get() = _ultimaConsultaApi
 
     init {
-        observeDatabaseChanges()
-        scheduleHourlySync()
-        checkWorkStatus()
+        observeDatabaseChanges() //pa que vea que tiene en la bd
+        scheduleHourlySync() //la sincronizacion de cada hora
+        checkWorkStatus()//para ver el estado del worker
+    }
+
+
+    //funciones pa registrar la hora de cada accion
+    private fun actualizarFecha() { // Para la base de datos
+        val fechaActual = System.currentTimeMillis() // Obtener el tiempo en milisegundos
+        _ultimaInsercion.value = fechaActual
+        Log.d("DB_Fecha", "Última actualización: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(fechaActual))}")
+    }
+
+    private fun actualizarConsultaApi() { // Para cuando se sincroniza con la API
+        val fechaActual = System.currentTimeMillis()
+        _ultimaConsultaApi.value = fechaActual
+        Log.d("API_Consulta", "Ultima consulta a la API: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(fechaActual))}")
     }
 
     private fun observeDatabaseChanges() {
         viewModelScope.launch(Dispatchers.IO) {
             repository.getAllFlow().collect { monedas ->
                 _monedas.value = monedas
-                actualizarFecha() // Guardar la última fecha
+                actualizarFecha() // ultima fecha que guarda en bd
                 logDatabase(monedas) // Mostrar en Logcat
-            }
-        }
-    }
-    fun checkWorkStatus() {
-        viewModelScope.launch(Dispatchers.IO) {
-            val workInfos = workManager.getWorkInfosByTag("SyncExchangeWorker").get()
-
-            workInfos.forEach { workInfo ->
-                Log.d("WorkManagerStatus", "Work ID: ${workInfo.id}, Estado: ${workInfo.state}")
             }
         }
     }
@@ -71,15 +80,16 @@ class MainViewModel@Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             val monedasActualizadas = repository.getAll()
             _monedas.value = monedasActualizadas
-            actualizarFecha() // Guardar la última fecha
-            logDatabase(monedasActualizadas) // Mostrar en Logcat
+
+            logDatabase(monedasActualizadas)
         }
     }
 
-//funcion para el worker que se ejecuta cada hora
+//funcion para el worker que se ejecuta cada hora y llama a la api con el worker
     fun scheduleHourlySync() {
+
         val workRequest = PeriodicWorkRequestBuilder<SyncExchangeWorker>(
-            1, TimeUnit.HOURS // Se ejecutará cada 1 hora
+            1, TimeUnit.HOURS // Se ejec cada 1 hora
         )
             .setConstraints(
                 Constraints.Builder()
@@ -94,24 +104,27 @@ class MainViewModel@Inject constructor(
             workRequest
         )
         Log.d("WorkManager", "Sincronizacion programada cada hora")
+
+        actualizarConsultaApi()
     }
 
 //funcion para el worker que se ejecuta manualmente
     fun syncNow() {
-        val workRequest = OneTimeWorkRequestBuilder<SyncExchangeWorker>()
+    val workRequest = OneTimeWorkRequestBuilder<SyncExchangeWorker>()
             .setConstraints(
                 Constraints.Builder()
-                    .setRequiredNetworkType(NetworkType.CONNECTED) // Solo se ejecuta si hay internet
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
                     .build()
             )
             .build()
 
         workManager.enqueue(workRequest)
 
-        // Esperar un poco y actualizar la UI después de la sincronización
+        actualizarConsultaApi()
+        // se  actualiza la ui
         viewModelScope.launch {
-            kotlinx.coroutines.delay(3000) // Esperar un poco para que se complete el Worker
-            getAllExchanges() // Cargar los datos actualizados en la UI
+            kotlinx.coroutines.delay(3000)
+            getAllExchanges()
         }
     }
 
@@ -130,17 +143,21 @@ class MainViewModel@Inject constructor(
         }
     }
 
-    private fun actualizarFecha() {
-        val fechaActual = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date())
-        _ultimaActualizacion.value = fechaActual
-        Log.d("DB_Fecha", "Última actualización: $fechaActual")
-    }
-
     fun clearDatabase() {
         viewModelScope.launch(Dispatchers.IO) {
             repository.deleteAll()
             _monedas.value = emptyList()
             Log.d("DB_Clear", "Base de datos eliminada correctamente.")
+        }
+    }
+
+    fun checkWorkStatus() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val workInfos = workManager.getWorkInfosByTag("SyncExchangeWorker").get()
+
+            workInfos.forEach { workInfo ->
+                Log.d("WorkManagerStatus", "Work ID: ${workInfo.id}, Estado: ${workInfo.state}")
+            }
         }
     }
 

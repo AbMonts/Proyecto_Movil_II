@@ -12,4 +12,5 @@ data class MonedaEntity (
     @ColumnInfo(name = "base_currency") val baseCurrency: String,     // Moneda base (USD, por ejemplo)
     @ColumnInfo(name = "timestamp") val timestamp: Long,          // Fecha de sincronización en formato Unix
     @ColumnInfo(name = "sync_date") val syncDate: String          // Fecha de sincronización legible (yyyy-MM-dd)
+
 )

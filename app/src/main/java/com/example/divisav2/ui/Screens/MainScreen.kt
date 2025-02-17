@@ -19,17 +19,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.divisav2.Data.Entities.MonedaEntity
 import com.example.divisav2.ViewModel.MainViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainScreen {
 
 }
 @Composable
 fun MainScreen(viewModel: MainViewModel) {
-    val monedasState = viewModel.monedas.collectAsState() // Observa los datos
+    val monedasState = viewModel.monedas.collectAsState()
+    val ultimaInsercionState = viewModel.ultimaInsercion.collectAsState()
+    val ultimaConsultaApiState = viewModel.ultimaConsultaApi.collectAsState()
 
     Scaffold(
         topBar = {
-          Text("Divisas")
+            Text("Divisas")
         }
     ) { paddingValues ->
         Column(
@@ -37,14 +42,15 @@ fun MainScreen(viewModel: MainViewModel) {
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            // Botones de acciones
             Button(
-                onClick = { viewModel.getAllExchanges() },//debe cargar los de la base de datos
+                onClick = { viewModel.getAllExchanges() },
                 modifier = Modifier.padding(16.dp)
             ) {
                 Text("Cargar Monedas")
             }
             Button(
-                onClick = { viewModel.syncNow() },//carga y muestra los datos desde la api
+                onClick = { viewModel.syncNow() },
                 modifier = Modifier.padding(16.dp)
             ) {
                 Text("Sincronizar Ahora")
@@ -56,7 +62,17 @@ fun MainScreen(viewModel: MainViewModel) {
                 Text("Eliminar Datos")
             }
 
+            // fechas
+            Text(
+                text = "Ultima insercion en BD: ${formatTimestamp(ultimaInsercionState.value)}",
+                modifier = Modifier.padding(16.dp)
+            )
+            Text(
+                text = "Ultima consulta a la API: ${formatTimestamp(ultimaConsultaApiState.value)}",
+                modifier = Modifier.padding(16.dp)
+            )
 
+            // Lista de monedas
             LazyColumn(modifier = Modifier.padding(16.dp)) {
                 items(monedasState.value) { moneda ->
                     MonedaItem(moneda)
@@ -65,6 +81,7 @@ fun MainScreen(viewModel: MainViewModel) {
         }
     }
 }
+
 
 @Composable
 fun MonedaItem(moneda: MonedaEntity) {
@@ -80,5 +97,13 @@ fun MonedaItem(moneda: MonedaEntity) {
             Text(text = "Base: ${moneda.baseCurrency}")
             Text(text = "Fecha: ${moneda.syncDate}")
         }
+    }
+}
+
+fun formatTimestamp(timestamp: Long): String {
+    return if (timestamp > 0) {
+        SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(timestamp))
+    } else {
+        "Hay... no sé."
     }
 }

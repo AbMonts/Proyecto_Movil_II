@@ -55,10 +55,30 @@ class MainActivity : ComponentActivity() {
                 MainScreen(viewModel)
             }
         }
-                //fetchExchangeRates()//desde la api, obtiene datis (manual)
+        //fetchExchangeRates()//desde la api, obtiene datis (manual)
         //fetchSavedData() //desde la base de datos localll con room
         checkWorkerStatus()
         }
+
+
+
+    private fun formatUnixTimestamp(timestamp: Long): String {
+        val date = java.util.Date(timestamp * 1000)
+        val format = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+        return format.format(date)
+    }
+
+    private fun checkWorkerStatus() {
+        lifecycleScope.launch {
+            val workInfos = WorkManager.getInstance(applicationContext)
+                .getWorkInfosForUniqueWork("SyncExchangeWorker")
+                .get() // Obtiene el estado actual del Worker
+
+            workInfos.forEach { workInfo ->
+                Log.d("WorkerStatus", "------- > Estado: ${workInfo.state}, Última ejecución: ${workInfo.runAttemptCount}")
+            }
+        }
+    }
 
 
     private fun fetchExchangeRates() {
@@ -125,23 +145,5 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-
-    private fun formatUnixTimestamp(timestamp: Long): String {
-        val date = java.util.Date(timestamp * 1000)
-        val format = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-        return format.format(date)
-    }
-
-    private fun checkWorkerStatus() {
-        lifecycleScope.launch {
-            val workInfos = WorkManager.getInstance(applicationContext)
-                .getWorkInfosForUniqueWork("SyncExchangeWorker")
-                .get() // Obtiene el estado actual del Worker
-
-            workInfos.forEach { workInfo ->
-                Log.d("WorkerStatus", "------- > Estado: ${workInfo.state}, Última ejecución: ${workInfo.runAttemptCount}")
-            }
-        }
-    }
 
 }
