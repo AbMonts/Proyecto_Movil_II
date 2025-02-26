@@ -15,7 +15,6 @@ import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Inject
 
-@AndroidEntryPoint
 class ExchangeProvider : ContentProvider() {
     companion object {
         const val AUTHORITY = "com.example.divisav2.provider"
@@ -26,9 +25,12 @@ class ExchangeProvider : ContentProvider() {
     lateinit var repository: ExchangeRepository
 
     override fun onCreate(): Boolean {
+        // Obtén el contexto de la aplicación
         val appContext = context?.applicationContext as Application
+        // Accede a Hilt para obtener el repositorio
         val entryPoint = EntryPointAccessors.fromApplication(appContext, ContentProviderEntryPoint::class.java)
         repository = entryPoint.exchangeRepository()
+
         return true
     }
 
@@ -63,5 +65,6 @@ class ExchangeProvider : ContentProvider() {
     interface ContentProviderEntryPoint {
         fun exchangeRepository(): ExchangeRepository
     }
+
 
 }
