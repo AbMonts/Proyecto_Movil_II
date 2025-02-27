@@ -1,6 +1,7 @@
 package com.example.divisav2.Data.Repository
 
 import android.database.Cursor
+import androidx.sqlite.db.SupportSQLiteQuery
 import com.example.divisav2.Data.Dao.ExchangeDAO
 import com.example.divisav2.Data.Entities.MonedaEntity
 import kotlinx.coroutines.flow.Flow
@@ -34,4 +35,10 @@ class ExchangeRepository @Inject constructor(
     fun getExchangeRateByIdCursor(id: Long): Cursor {
         return exchangeDAO.getExchangeRateByIdCursor(id)
     }
+
+    fun getExchangeRatesCursor(query: SupportSQLiteQuery): Cursor {
+        return exchangeDAO.query(query)
+    }
+
+
 }

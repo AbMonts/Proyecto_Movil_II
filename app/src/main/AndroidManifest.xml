@@ -6,7 +6,7 @@
 
     <permission
         android:name="com.example.divisav2.READ_EXCHANGE_RATES"
-        android:protectionLevel="signature" />
+        android:protectionLevel="normal" />
 
     <application
 
@@ -44,9 +44,13 @@
         <provider
             android:name=".Data.Provider.ExchangeProvider"
             android:authorities="com.example.divisav2.provider"
+            android:enabled="true"
             android:exported="true"
+            android:multiprocess="true"
             android:grantUriPermissions="true"
-            android:permission="com.example.divisav2.READ_EXCHANGE_RATES">
+            android:permission="com.example.divisav2.READ_EXCHANGE_RATES"
+            >
+
             <grant-uri-permission android:pathPattern=".*"/>
         </provider>
 

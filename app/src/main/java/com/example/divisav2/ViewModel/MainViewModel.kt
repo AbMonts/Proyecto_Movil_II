@@ -17,9 +17,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -75,7 +72,7 @@ class MainViewModel@Inject constructor(
         }
     }
 
-
+//obtiene todas las monedas a partir del repositorio
     fun getAllExchanges() {
         viewModelScope.launch(Dispatchers.IO) {
             val monedasActualizadas = repository.getAll()
@@ -110,22 +107,22 @@ class MainViewModel@Inject constructor(
 
 //funcion para el worker que se ejecuta manualmente
     fun syncNow() {
-    val workRequest = OneTimeWorkRequestBuilder<SyncExchangeWorker>()
-            .setConstraints(
-                Constraints.Builder()
-                    .setRequiredNetworkType(NetworkType.CONNECTED)
-                    .build()
-            )
-            .build()
+        val workRequest = OneTimeWorkRequestBuilder<SyncExchangeWorker>()
+                .setConstraints(
+                    Constraints.Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED)
+                        .build()
+                )
+                .build()
 
-        workManager.enqueue(workRequest)
+            workManager.enqueue(workRequest)
 
-        actualizarConsultaApi()
-        // se  actualiza la ui
-        viewModelScope.launch {
-            kotlinx.coroutines.delay(3000)
-            getAllExchanges()
-        }
+            actualizarConsultaApi()
+            // se  actualiza la ui
+            viewModelScope.launch {
+                kotlinx.coroutines.delay(3000)
+                getAllExchanges()
+            }
     }
 
     private fun logDatabase(monedas: List<MonedaEntity>) {

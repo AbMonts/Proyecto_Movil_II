@@ -6,6 +6,8 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.RawQuery
+import androidx.sqlite.db.SupportSQLiteQuery
 import com.example.divisav2.Data.Entities.MonedaEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -38,4 +40,8 @@ interface ExchangeDAO {
 
     @Query("SELECT * FROM exchange_rates WHERE id = :id")
     fun getExchangeRateByIdCursor(id: Long): Cursor
+
+    @RawQuery
+    fun query(query: SupportSQLiteQuery): Cursor
+
 }
