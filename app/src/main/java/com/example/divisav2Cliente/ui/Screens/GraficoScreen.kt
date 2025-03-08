@@ -33,7 +33,6 @@ import com.example.divisav2Cliente.Data.Modelo.Moneda
 import com.example.divisav2Cliente.ui.viewmodel.ExchangeViewModel
 
 
-
 @Composable
 fun GraficoScreen(viewModel: ExchangeViewModel, navController: NavController) {
     val exchangeRates by viewModel.exchangeRates.collectAsState()
@@ -42,14 +41,18 @@ fun GraficoScreen(viewModel: ExchangeViewModel, navController: NavController) {
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Spacer(modifier = Modifier.height(20.dp)) // Espacio antes del botón
+
         Button(
             onClick = { navController.popBackStack() },
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier
+                .align(Alignment.Start)
+                .padding(start = 30.dp, bottom = 10.dp)
         ) {
             Text("Volver")
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         if (exchangeRates.isNotEmpty()) {
             LineChartCompose(exchangeRates)
@@ -58,123 +61,134 @@ fun GraficoScreen(viewModel: ExchangeViewModel, navController: NavController) {
         }
     }
 }
-
 @Composable
 fun LineChartCompose(exchangeRates: List<Moneda>) {
-    val paddingX = 120f  // Más espacio para etiquetas del eje Y
-    val paddingY = 80f   // Más espacio superior
-    val chartWidth = 800f  // Aumento del tamaño de la gráfica
-    val chartHeight = 500f
+    val paddingX = 120f
+    val paddingY = 80f
+    val chartWidth = 1000f
+    val chartHeight = 600f
 
     val maxX = (exchangeRates.size - 1).coerceAtLeast(1).toFloat()
     val maxY = exchangeRates.maxOfOrNull { it.exchangeRate }?.toFloat() ?: 1f
     val minY = exchangeRates.minOfOrNull { it.exchangeRate }?.toFloat() ?: 0f
 
     val chartData = exchangeRates.mapIndexed { index, moneda ->
-        val normalizedX = (index / maxX) * (chartWidth - paddingX)
+        val normalizedX = (index.toFloat() / maxX) * (chartWidth - paddingX)
         val normalizedY = ((moneda.exchangeRate.toFloat() - minY) / (maxY - minY)) * (chartHeight - paddingY)
         normalizedX to chartHeight - normalizedY
     }
 
     var selectedPoint by remember { mutableStateOf<Int?>(null) }
 
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(550.dp)  // Ajustado para más espacio
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Canvas(modifier = Modifier
-            .fillMaxSize()
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onPress = { offset ->
-                        val tappedIndex = chartData.indexOfFirst { (x, y) ->
-                            val dx = (paddingX + x) - offset.x
-                            val dy = y - offset.y
-                            dx * dx + dy * dy <= 400  // Aumentado el radio de detección táctil
-                        }
-                        if (tappedIndex != -1) {
-                            selectedPoint = tappedIndex
-                        }
-                    }
-                )
-            }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(600.dp)
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
         ) {
-            // Dibujar ejes
-            drawLine(
-                color = Color.Gray,
-                start = Offset(paddingX, paddingY),
-                end = Offset(paddingX, chartHeight),
-                strokeWidth = 4f
-            )
-            drawLine(
-                color = Color.Gray,
-                start = Offset(paddingX, chartHeight),
-                end = Offset(chartWidth, chartHeight),
-                strokeWidth = 4f
-            )
-
-            // Etiquetas del eje Y (tasas de cambio)
-            val stepY = (maxY - minY) / 5
-            for (i in 0..5) {
-                val value = minY + (stepY * i)
-                val yOffset = chartHeight - ((value - minY) / (maxY - minY)) * (chartHeight - paddingY)
-                drawContext.canvas.nativeCanvas.drawText(
-                    "%.2f".format(value),
-                    30f, yOffset,
-                    android.graphics.Paint().apply {
-                        textSize = 40f  // Tamaño de fuente aumentado
-                        color = android.graphics.Color.BLACK
-                    }
-                )
-            }
-
-            // Dibujar líneas de la gráfica
-            val path = Path().apply {
-                moveTo(paddingX + chartData.first().first, chartData.first().second)
-                for (point in chartData.drop(1)) {
-                    lineTo(paddingX + point.first, point.second)
+            Canvas(modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onPress = { offset ->
+                            val tappedIndex = chartData.indexOfFirst { (x, y) ->
+                                val dx = (paddingX + x) - offset.x
+                                val dy = y - offset.y
+                                dx * dx + dy * dy <= 400
+                            }
+                            selectedPoint = if (tappedIndex != -1) tappedIndex else null
+                        }
+                    )
                 }
-            }
-            drawPath(path, color = Color.Blue, style = Stroke(width = 6f))
-
-            // Dibujar puntos y mostrar información cuando se selecciona uno
-            chartData.forEachIndexed { index, point ->
-                val moneda = exchangeRates[index]
-
-                drawCircle(
-                    color = if (selectedPoint == index) Color.Green else Color.Red,
-                    radius = 10f,  // Puntos más grandes
-                    center = Offset(paddingX + point.first, point.second)
+            ) {
+                // Dibujar ejes
+                drawLine(
+                    color = Color.Gray,
+                    start = Offset(paddingX, paddingY),
+                    end = Offset(paddingX, chartHeight),
+                    strokeWidth = 4f
+                )
+                drawLine(
+                    color = Color.Gray,
+                    start = Offset(paddingX, chartHeight),
+                    end = Offset(chartWidth, chartHeight),
+                    strokeWidth = 4f
                 )
 
-                if (selectedPoint == index) {
-                    // Etiqueta con código y tasa de cambio (arriba de la gráfica)
-                    val labelText = "1 (base) = ${moneda.currencyCode}: ${moneda.exchangeRate}"
+                // Etiquetas del eje Y
+                val stepY = (maxY - minY) / 6
+                for (i in 0..6) {
+                    val value = minY + (stepY * i)
+                    val yOffset = chartHeight - ((value - minY) / (maxY - minY)) * (chartHeight - paddingY)
                     drawContext.canvas.nativeCanvas.drawText(
-                        labelText,
-                        paddingX + point.first, paddingY - 40,
+                        "%.2f".format(value),
+                        30f, yOffset,
                         android.graphics.Paint().apply {
-                            textSize = 45f  // Aumentado tamaño de la fuente
+                            textSize = 35f
                             color = android.graphics.Color.BLACK
                         }
                     )
+                }
 
-                    // Etiqueta de fecha (debajo de la gráfica)
-                    val dateText = "Última fecha: ${moneda.syncDate}"
+                // Dibujar líneas de la gráfica
+                val path = Path().apply {
+                    moveTo(paddingX + chartData.first().first, chartData.first().second)
+                    for (point in chartData.drop(1)) {
+                        lineTo(paddingX + point.first, point.second)
+                    }
+                }
+                drawPath(path, color = Color.Blue, style = Stroke(width = 6f))
+
+                // Dibujar puntos
+                chartData.forEachIndexed { index, point ->
+                    drawCircle(
+                        color = if (selectedPoint == index) Color.Green else Color.Red,
+                        radius = 10f,
+                        center = Offset(paddingX + point.first, point.second)
+                    )
+                }
+
+                // Etiqueta de la fecha en el eje X solo si un punto está seleccionado
+                selectedPoint?.let { index ->
+                    val moneda = exchangeRates[index]
+                    val xOffset = paddingX + chartData[index].first
                     drawContext.canvas.nativeCanvas.drawText(
-                        dateText,
-                        paddingX + point.first, chartHeight + 50,
+                        moneda.syncDate,
+                        xOffset, chartHeight + 40f,
                         android.graphics.Paint().apply {
-                            textSize = 35f  // Aumentado tamaño de la fuente
-                            color = android.graphics.Color.DKGRAY
+                            textSize = 35f
+                            color = android.graphics.Color.BLACK
+                            textAlign = android.graphics.Paint.Align.CENTER
                         }
                     )
                 }
             }
         }
+
+        // Información del punto seleccionado debajo de la gráfica
+        selectedPoint?.let { index ->
+            val moneda = exchangeRates[index]
+            val labelText = "1 (base) = ${moneda.currencyCode}: ${moneda.exchangeRate}"
+
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Moneda: ${moneda.currencyCode} | Tasa: ${moneda.exchangeRate} | Fecha: ${moneda.syncDate}",
+                    color = Color.Black
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = labelText,
+                    color = Color.Blue
+                )
+            }
+        }
     }
 }
-
