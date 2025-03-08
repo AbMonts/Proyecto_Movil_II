@@ -16,13 +16,16 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel@Inject constructor(
     private val repository: ExchangeRepository,
+
     private val workManager: WorkManager
 ) : ViewModel() {
     private val _monedas = MutableStateFlow<List<MonedaEntity>>(emptyList())
@@ -35,56 +38,39 @@ class MainViewModel@Inject constructor(
     val ultimaConsultaApi: StateFlow<Long> get() = _ultimaConsultaApi
 
     init {
-        observeDatabaseChanges() //pa que vea que tiene en la bd
+        //observeDatabaseChanges() //pa que vea que tiene en la bd
         scheduleHourlySync() //la sincronizacion de cada hora
         checkWorkStatus()//para ver el estado del worker
     }
 
 
-    //funciones pa registrar la hora de cada accion
-    private fun actualizarFecha() { // Para la base de datos
-        val fechaActual = System.currentTimeMillis() // Obtener el tiempo en milisegundos
-        _ultimaInsercion.value = fechaActual
-        Log.d("DB_Fecha", "Última actualización: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(fechaActual))}")
-    }
-
-    private fun actualizarConsultaApi() { // Para cuando se sincroniza con la API
-        val fechaActual = System.currentTimeMillis()
-        _ultimaConsultaApi.value = fechaActual
-        Log.d("API_Consulta", "Ultima consulta a la API: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(fechaActual))}")
-    }
 
     private fun observeDatabaseChanges() {
         viewModelScope.launch(Dispatchers.IO) {
-            repository.getAllFlow().collect { monedas ->
+            repository.getAllFlow().collectLatest { monedas ->
                 _monedas.value = monedas
-                actualizarFecha() // ultima fecha que guarda en bd
-                logDatabase(monedas) // Mostrar en Logcat
+                actualizarFecha()
+                logDatabase(monedas)
             }
         }
     }
 
 
 
-    fun insertAllExchanges(monedas: List<MonedaEntity>) {
-        viewModelScope.launch(Dispatchers.IO) {
-            repository.insertAll(monedas)
-        }
-    }
 
-//obtiene todas las monedas a partir del repositorio
+
+    //obtiene todas las monedas a partir del repositorio
     fun getAllExchanges() {
-        viewModelScope.launch(Dispatchers.IO) {
-            val monedasActualizadas = repository.getAll()
-            _monedas.value = monedasActualizadas
-
-            logDatabase(monedasActualizadas)
+        viewModelScope.launch {
+            repository.getAllFlow().collectLatest { monedasActualizadas ->
+                _monedas.value = monedasActualizadas
+            }
         }
     }
 
-//funcion para el worker que se ejecuta cada hora y llama a la api con el worker
-    fun scheduleHourlySync() {
 
+//funcion para el worker que se ejecuta cada hora y llama a la api con el worker SyncExchangeWorker.kt
+    fun scheduleHourlySync() {
         val workRequest = PeriodicWorkRequestBuilder<SyncExchangeWorker>(
             1, TimeUnit.HOURS // Se ejec cada 1 hora
         )
@@ -108,23 +94,51 @@ class MainViewModel@Inject constructor(
 //funcion para el worker que se ejecuta manualmente
     fun syncNow() {
         val workRequest = OneTimeWorkRequestBuilder<SyncExchangeWorker>()
-                .setConstraints(
-                    Constraints.Builder()
-                        .setRequiredNetworkType(NetworkType.CONNECTED)
-                        .build()
-                )
-                .build()
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
+            )
+            .addTag("ManualSync")
+            .build()
 
-            workManager.enqueue(workRequest)
+        workManager.enqueue(workRequest)
 
-            actualizarConsultaApi()
-            // se  actualiza la ui
-            viewModelScope.launch {
-                kotlinx.coroutines.delay(3000)
-                getAllExchanges()
+        actualizarConsultaApi()
+
+        workManager.getWorkInfoByIdLiveData(workRequest.id).observeForever { workInfo ->
+            if (workInfo != null && workInfo.state.isFinished) {
+                Log.d("SyncNow", "Sincronización manual terminada")
+                viewModelScope.launch {
+                    getAllExchanges() // Evita crear múltiples `collect`
+                }
             }
+        }
     }
 
+
+
+    fun insertAllExchanges(monedas: List<MonedaEntity>) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.insertAll(monedas)
+        }
+    }
+
+
+    //funciones pa registrar la hora de cada accion
+    private fun actualizarFecha() { // Para la base de datos
+        val fechaActual = System.currentTimeMillis() // Obtener el tiempo en milisegundos
+        _ultimaInsercion.value = fechaActual
+        Log.d("DB_Fecha", "Última actualización: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(fechaActual))}")
+    }
+
+    private fun actualizarConsultaApi() { // Para cuando se sincroniza con la API
+        val fechaActual = System.currentTimeMillis()
+        _ultimaConsultaApi.value = fechaActual
+        Log.d("API_Consulta", "Ultima consulta a la API: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(fechaActual))}")
+    }
+
+    //para imprimir lo que se obtuvo de la bd
     private fun logDatabase(monedas: List<MonedaEntity>) {
         if (monedas.isEmpty()) {
             Log.d("DB_Info", "No hay datos en la base de datos :0 ")
@@ -143,11 +157,15 @@ class MainViewModel@Inject constructor(
     fun clearDatabase() {
         viewModelScope.launch(Dispatchers.IO) {
             repository.deleteAll()
-            _monedas.value = emptyList()
+            withContext(Dispatchers.Main) {
+                _monedas.value = emptyList()
+            }
             Log.d("DB_Clear", "Base de datos eliminada correctamente.")
         }
     }
 
+
+    //solo prueba dell worker
     fun checkWorkStatus() {
         viewModelScope.launch(Dispatchers.IO) {
             val workInfos = workManager.getWorkInfosByTag("SyncExchangeWorker").get()

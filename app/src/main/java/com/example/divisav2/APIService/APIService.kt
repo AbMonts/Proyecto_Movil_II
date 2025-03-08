@@ -6,7 +6,7 @@ import retrofit2.converter.scalars.ScalarsConverterFactory
 import retrofit2.http.GET
 
 private const val BASE_URL =
-    "https://v6.exchangerate-api.com/v6/a518eed84723c3fb05ab9e0e/"
+    "https://v6.exchangerate-api.com/v6/05b9a99e2b032c37f3ab837b/"
 
 private val retrofit = Retrofit.Builder()
     .addConverterFactory(ScalarsConverterFactory.create())
@@ -15,7 +15,7 @@ private val retrofit = Retrofit.Builder()
 
 // Interfaz del servicio de la API
 interface APIExchange {
-    @GET("latest/USD")  // Endpoint correcto
+    @GET("latest/MXN")  // Endpoint correcto
     suspend fun getExchangeRates(): ExchangeAPIResponse
 }
 

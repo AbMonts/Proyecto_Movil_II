@@ -17,14 +17,16 @@ import javax.inject.Inject
 class ExchangeProvider : ContentProvider() {
     companion object {
         const val AUTHORITY = "com.example.divisav2.provider"
-        val CONTENT_URI: Uri = Uri.parse("content://$AUTHORITY/exchange_rates")
+        //val CONTENT_URI: Uri = Uri.parse("content://$AUTHORITY/exchange_rates") //este va en el cliente :)
 
         private const val CODE_EXCHANGE_RATE = 1
         private const val CODE_EXCHANGE_RATE_ID = 2
+        private const val CODE_EXCHANGE_RATE_FILTERED = 3
 
         private val uriMatcher = UriMatcher(UriMatcher.NO_MATCH).apply {
             addURI(AUTHORITY, "exchange_rates", CODE_EXCHANGE_RATE)
             addURI(AUTHORITY, "exchange_rates/#", CODE_EXCHANGE_RATE_ID)
+            addURI(AUTHORITY, "exchange_rates/filtered/*/*/*", CODE_EXCHANGE_RATE_FILTERED)
         }
     }
 
@@ -38,30 +40,6 @@ class ExchangeProvider : ContentProvider() {
         return true
     }
 
-//    override fun query(
-//        uri: Uri,
-//        projection: Array<String>?,
-//        selection: String?,
-//        selectionArgs: Array<String>?,
-//        sortOrder: String?
-//    ): Cursor? {
-//        return when (uriMatcher.match(uri)) {
-//            CODE_EXCHANGE_RATE -> {
-//                val cursor = repository.getExchangeRatesCursor()
-//                Log.d("ExchangeProvider", "Columnas en el cursor: ${cursor.columnNames.joinToString()}")
-//                cursor.setNotificationUri(context?.contentResolver, uri)
-//                cursor
-//            }
-//            CODE_EXCHANGE_RATE_ID -> {
-//                val id = uri.lastPathSegment?.toLongOrNull() ?: return null
-//                val cursor = repository.getExchangeRateByIdCursor(id)
-//                Log.d("ExchangeProvider", "Columnas en el cursor: ${cursor.columnNames.joinToString()}")
-//                cursor.setNotificationUri(context?.contentResolver, uri)
-//                cursor
-//            }
-//            else -> throw IllegalArgumentException("Unknown URI: $uri")
-//        }
-//    }
 
     override fun query(
         uri: Uri,
@@ -77,17 +55,22 @@ class ExchangeProvider : ContentProvider() {
                     cursor.setNotificationUri(context?.contentResolver, uri)
                 }
             }
-            CODE_EXCHANGE_RATE_ID -> {
-                val id = uri.lastPathSegment?.toLongOrNull() ?: return null
-                repository.getExchangeRateByIdCursor(id)?.also { cursor ->
-                    Log.d("ExchangeProvider", "Columnas en el cursor: ${cursor.columnNames.joinToString()}")
+            CODE_EXCHANGE_RATE_FILTERED -> {
+                val segments = uri.pathSegments
+                if (segments.size < 5) { // Debe incluir 3 parámetros: currency, fechaInicio, fechaFin
+                    throw IllegalArgumentException("Formato de URI inválido: $uri")
+                }
+
+                val currencyCode = segments[2]
+                val fechaInicio = segments[3].toLongOrNull() ?: 0L
+                val fechaFin = segments[4].toLongOrNull() ?: Long.MAX_VALUE
+
+                repository.getFilteredExchangeRatesCursor(currencyCode, fechaInicio, fechaFin)?.also { cursor ->
                     cursor.setNotificationUri(context?.contentResolver, uri)
                 }
-            }
-            else -> throw IllegalArgumentException("Unknown URI: $uri")
+            }else -> throw IllegalArgumentException("Unknown URI: $uri")
         }
     }
-
 
     override fun getType(uri: Uri): String? {
         return when (uriMatcher.match(uri)) {

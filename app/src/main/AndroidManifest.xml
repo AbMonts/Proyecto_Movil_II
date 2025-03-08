@@ -48,8 +48,7 @@
             android:exported="true"
             android:multiprocess="true"
             android:grantUriPermissions="true"
-            android:permission="com.example.divisav2.READ_EXCHANGE_RATES"
-            >
+            android:permission="com.example.divisav2.READ_EXCHANGE_RATES">
 
             <grant-uri-permission android:pathPattern=".*"/>
         </provider>

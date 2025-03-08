@@ -41,6 +41,13 @@ interface ExchangeDAO {
     @Query("SELECT * FROM exchange_rates WHERE id = :id")
     fun getExchangeRateByIdCursor(id: Long): Cursor
 
+    @Query("""
+    SELECT * FROM exchange_rates 
+    WHERE currency_code = :currencyCode 
+    AND timestamp BETWEEN :fechaInicio AND :fechaFin
+""")
+    fun getFilteredExchangeRatesCursor(currencyCode: String, fechaInicio: Long, fechaFin: Long): Cursor
+
     @RawQuery
     fun query(query: SupportSQLiteQuery): Cursor
 
