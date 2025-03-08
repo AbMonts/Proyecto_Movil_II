@@ -41,13 +41,10 @@ class MainActivity : ComponentActivity() {
             composable("exchangeScreen") {
                 ExchangeScreen(viewModel, navController)
             }
-            composable("chartScreen/{moneda}") { backStackEntry ->
-                val moneda = backStackEntry.arguments?.getString("moneda") ?: "MXN"
-                GraficoScreen(viewModel, moneda, navController)
+            composable("chartScreen") {
+                GraficoScreen(viewModel, navController)
             }
         }
     }
-
-
 
 }

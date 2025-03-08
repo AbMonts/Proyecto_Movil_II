@@ -28,7 +28,6 @@ fun ExchangeScreen(viewModel: ExchangeViewModel, navController: NavController) {
     val monedasDisponibles = listOf("MXN", "USD", "EUR", "JPY", "GBP")
 
     var fechaMillis by remember { mutableStateOf(System.currentTimeMillis()) }
-    var mostrarGrafica by remember { mutableStateOf(false) } // Estado para mostrar/ocultar gráfica
 
     val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
@@ -87,7 +86,7 @@ fun ExchangeScreen(viewModel: ExchangeViewModel, navController: NavController) {
 //                viewModel.consultarExchangeRatesFiltrados(moneda, fechaMillis)
 //                mostrarGrafica = true // Mostrar la gráfica cuando se buscan datos
                 viewModel.consultarExchangeRatesFiltrados(moneda, fechaMillis)
-                navController.navigate("chartScreen/$moneda")
+                navController.navigate("chartScreen")
             },
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -97,10 +96,10 @@ fun ExchangeScreen(viewModel: ExchangeViewModel, navController: NavController) {
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
-            onClick = { mostrarGrafica = false }, // Ocultar la gráfica
+            onClick = { viewModel.loadExchangeRates() },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Ocultar Gráfica")
+            Text("Actualizar Tasas")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -124,33 +123,7 @@ fun ExchangeScreen(viewModel: ExchangeViewModel, navController: NavController) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        if (mostrarGrafica && exchangeRates.isNotEmpty()) {
-
-        }
     }
 
 
 }
-@Composable
-fun ChartScreen(viewModel: ExchangeViewModel, moneda: String, navController: NavController) {
-    val exchangeRates by viewModel.exchangeRates.collectAsState()
-
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Button(
-            onClick = { navController.popBackStack() },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Volver")
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (exchangeRates.isNotEmpty()) {
-            LineChartCompose(exchangeRates)
-        } else {
-            Text("No hay datos disponibles para $moneda")
-        }
-    }
-}
-
-
