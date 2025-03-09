@@ -48,82 +48,101 @@ fun ExchangeScreen(viewModel: ExchangeViewModel, navController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(text = "Selecciona la Moneda:")
 
-        Box {
-            Button(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) {
-                Text(moneda)
-            }
+        Text(
+            text = "Consulta de Tasas de Cambio >:)",
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.primary
+        )
 
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                monedasDisponibles.forEach { item ->
-                    DropdownMenuItem(
-                        text = { Text(item) },
-                        onClick = {
-                            moneda = item
-                            expanded = false
+        //la selec de la moneda y fecha
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.medium,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("Selecciona la Moneda", style = MaterialTheme.typography.bodyMedium)
+
+                Box {
+                    Button(
+                        onClick = { expanded = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(moneda)
+                    }
+
+                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                        monedasDisponibles.forEach { item ->
+                            DropdownMenuItem(
+                                text = { Text(item) },
+                                onClick = {
+                                    moneda = item
+                                    expanded = false
+                                }
+                            )
                         }
-                    )
+                    }
+                }
+
+                ElevatedButton(
+                    onClick = { showDatePicker(context) { fechaMillis = it } },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Fecha: ${dateFormatter.format(fechaMillis)}")
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Button(
-            onClick = { showDatePicker(context) { fechaMillis = it } },
-            modifier = Modifier.fillMaxWidth()
+        // los botones, buscar, actualizar
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Text("Fecha: ${dateFormatter.format(fechaMillis)}")
+            ElevatedButton(
+                onClick = {
+                    viewModel.consultarExchangeRatesFiltrados(moneda, fechaMillis)
+                    navController.navigate("chartScreen")
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Buscar")
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            ElevatedButton(
+                onClick = { viewModel.loadExchangeRates() },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Actualizar")
+            }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = {
-//                viewModel.consultarExchangeRatesFiltrados(moneda, fechaMillis)
-//                mostrarGrafica = true // Mostrar la gráfica cuando se buscan datos
-                viewModel.consultarExchangeRatesFiltrados(moneda, fechaMillis)
-                navController.navigate("chartScreen")
-            },
-            modifier = Modifier.fillMaxWidth()
+        // --------------------Lista de tasas de cambio -------------------------------------------------------
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text("Buscar")
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = { viewModel.loadExchangeRates() },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Actualizar Tasas")
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        LazyColumn {
             items(exchangeRates) { moneda ->
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                    elevation = CardDefaults.cardElevation(4.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Código: ${moneda.currencyCode}")
-                        Text("Tasa: ${moneda.exchangeRate}")
-                        Text("Base: ${moneda.baseCurrency}")
-                        Text("Fecha: ${moneda.syncDate}")
+                        Text("Código: ${moneda.currencyCode}", style = MaterialTheme.typography.bodyLarge)
+                        Text("Tasa: ${moneda.exchangeRate}", style = MaterialTheme.typography.bodyMedium)
+                        Text("Base: ${moneda.baseCurrency}", style = MaterialTheme.typography.bodyMedium)
+                        Text("Fecha: ${moneda.syncDate}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
                     }
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
     }
-
-
 }
