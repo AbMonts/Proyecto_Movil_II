@@ -35,6 +35,7 @@ class SyncExchangeWorker @AssistedInject constructor(
     private fun syncExchangeRates() {
         Log.d("SyncExchangeWorker", "Llamando a la API para actualizar tasas de cambio...")
 
+
         runBlocking {
             try {
                 val response = ExchangeAPI.service.getExchangeRates()
@@ -57,10 +58,10 @@ class SyncExchangeWorker @AssistedInject constructor(
                             "Base: ${moneda.baseCurrency}, " +
                             "Fecha: ${moneda.syncDate}")
                 }
-                Log.d("SyncExchangeWorker", "Sincronización completada: ${monedas.size} monedas guardadas.")
+                Log.d("SyncExchangeWorker", "sincrinizacion completada: ${monedas.size} monedas guardadas.")
 
                 repository.insertAll(monedas) // Guardar en la BD
-                Log.d("SyncExchangeWorker", "Sincronización completada: ${monedas.size} monedas guardadas.")
+                Log.d("SyncExchangeWorker", "sincrinizacion completada: ${monedas.size} monedas guardadas.")
             } catch (e: Exception) {
                 Log.e("SyncExchangeWorker", "Error obteniendo datos de la API", e)
                 throw e

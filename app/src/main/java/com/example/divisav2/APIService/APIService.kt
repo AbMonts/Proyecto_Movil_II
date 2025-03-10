@@ -15,7 +15,7 @@ private val retrofit = Retrofit.Builder()
 
 // Interfaz del servicio de la API
 interface APIExchange {
-    @GET("latest/MXN")  // Endpoint correcto
+    @GET("latest/MXN")  // Endpoint
     suspend fun getExchangeRates(): ExchangeAPIResponse
 }
 

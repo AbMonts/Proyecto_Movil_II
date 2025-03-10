@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
@@ -38,26 +39,9 @@ class MainViewModel@Inject constructor(
     val ultimaConsultaApi: StateFlow<Long> get() = _ultimaConsultaApi
 
     init {
-        //observeDatabaseChanges() //pa que vea que tiene en la bd
         scheduleHourlySync() //la sincronizacion de cada hora
         checkWorkStatus()//para ver el estado del worker
     }
-
-
-
-    private fun observeDatabaseChanges() {
-        viewModelScope.launch(Dispatchers.IO) {
-            repository.getAllFlow().collectLatest { monedas ->
-                _monedas.value = monedas
-                actualizarFecha()
-                logDatabase(monedas)
-            }
-        }
-    }
-
-
-
-
 
     //obtiene todas las monedas a partir del repositorio
     fun getAllExchanges() {
@@ -102,7 +86,12 @@ class MainViewModel@Inject constructor(
             .addTag("ManualSync")
             .build()
 
-        workManager.enqueue(workRequest)
+        workManager.enqueueUniqueWork(
+            "SyncNowWorker",
+            ExistingWorkPolicy.KEEP, // Evita ejecuciones simultáneas
+            workRequest
+        )
+
 
         actualizarConsultaApi()
 
@@ -110,33 +99,31 @@ class MainViewModel@Inject constructor(
             if (workInfo != null && workInfo.state.isFinished) {
                 Log.d("SyncNow", "Sincronización manual terminada")
                 viewModelScope.launch {
-                    getAllExchanges() // Evita crear múltiples `collect`
+                    getAllExchanges() // Evita crear multiples llamadas a `collect`
                 }
             }
         }
     }
 
 
-
-    fun insertAllExchanges(monedas: List<MonedaEntity>) {
-        viewModelScope.launch(Dispatchers.IO) {
-            repository.insertAll(monedas)
-        }
-    }
-
-
-    //funciones pa registrar la hora de cada accion
-    private fun actualizarFecha() { // Para la base de datos
-        val fechaActual = System.currentTimeMillis() // Obtener el tiempo en milisegundos
-        _ultimaInsercion.value = fechaActual
-        Log.d("DB_Fecha", "Última actualización: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(fechaActual))}")
-    }
-
     private fun actualizarConsultaApi() { // Para cuando se sincroniza con la API
         val fechaActual = System.currentTimeMillis()
         _ultimaConsultaApi.value = fechaActual
         Log.d("API_Consulta", "Ultima consulta a la API: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(fechaActual))}")
     }
+
+
+    fun clearDatabase() {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.deleteAll()
+            withContext(Dispatchers.Main) {
+                _monedas.value = emptyList()
+            }
+            Log.d("DB_Clear", "Base de datos eliminada correctamente.")
+        }
+    }
+
+
 
     //para imprimir lo que se obtuvo de la bd
     private fun logDatabase(monedas: List<MonedaEntity>) {
@@ -153,17 +140,6 @@ class MainViewModel@Inject constructor(
             }
         }
     }
-
-    fun clearDatabase() {
-        viewModelScope.launch(Dispatchers.IO) {
-            repository.deleteAll()
-            withContext(Dispatchers.Main) {
-                _monedas.value = emptyList()
-            }
-            Log.d("DB_Clear", "Base de datos eliminada correctamente.")
-        }
-    }
-
 
     //solo prueba dell worker
     fun checkWorkStatus() {

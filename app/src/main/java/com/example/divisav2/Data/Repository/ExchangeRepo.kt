@@ -14,9 +14,6 @@ import javax.inject.Singleton
 class ExchangeRepository @Inject constructor(
     private val exchangeDAO: ExchangeDAO
 ) {
-    suspend fun getAll(): List<MonedaEntity> {
-        return exchangeDAO.getAllMonedas()
-    }
 
     fun getAllFlow(): Flow<List<MonedaEntity>> = exchangeDAO.getAllFlow()
 

@@ -57,7 +57,7 @@ class ExchangeProvider : ContentProvider() {
             }
             CODE_EXCHANGE_RATE_FILTERED -> {
                 val segments = uri.pathSegments
-                if (segments.size < 5) { // Debe incluir 3 parámetros: currency, fechaInicio, fechaFin
+                if (segments.size < 5) { // Debe incluir 3 param: currency, fechaInicio, fechaFin
                     throw IllegalArgumentException("Formato de URI inválido: $uri")
                 }
 
