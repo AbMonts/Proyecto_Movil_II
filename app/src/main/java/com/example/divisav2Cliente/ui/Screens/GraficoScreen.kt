@@ -49,7 +49,7 @@ fun GraficoScreen(viewModel: ExchangeViewModel, navController: NavController) {
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Encabezado con el tipo de cambio
+        // ------------encabezado con el tipo de cambio -----------------------
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -73,7 +73,7 @@ fun GraficoScreen(viewModel: ExchangeViewModel, navController: NavController) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Botón de regreso alineado a la izquierda
+        // ------------- boton para volver a Exchangescreen.kt --------------------------------
         Button(
             onClick = { navController.popBackStack() },
             modifier = Modifier.align(Alignment.Start)
@@ -83,7 +83,7 @@ fun GraficoScreen(viewModel: ExchangeViewModel, navController: NavController) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Verificar si hay datos
+        // ------------ aca se mostrara la grafica con los datos filtrados
         if (exchangeRates.isNotEmpty()) {
             LineChartCompose(exchangeRates)
         } else {
@@ -96,6 +96,7 @@ fun GraficoScreen(viewModel: ExchangeViewModel, navController: NavController) {
     }
 }
 
+//--------- ----------------- funci para construir la grafica (con datos filtrados)  ----------------
 @Composable
 fun LineChartCompose(exchangeRates: List<Moneda>) {
     val paddingX = 100f
@@ -112,6 +113,7 @@ fun LineChartCompose(exchangeRates: List<Moneda>) {
         val normalizedY = ((moneda.exchangeRate.toFloat() - minY) / (maxY - minY)) * (chartHeight - paddingY)
         normalizedX to chartHeight - normalizedY
     }
+
 
     var selectedPoint by remember { mutableStateOf<Int?>(null) }
 
@@ -142,7 +144,7 @@ fun LineChartCompose(exchangeRates: List<Moneda>) {
                         )
                     }
             ) {
-                // Dibujar fondo cuadriculado
+                // ---------------------------- fondo cuadriculado -----------------------------------
                 val gridColor = Color.LightGray
                 val gridSpacingX = (chartWidth - paddingX) / 5
                 val gridSpacingY = (chartHeight - paddingY) / 6
@@ -157,11 +159,11 @@ fun LineChartCompose(exchangeRates: List<Moneda>) {
                     drawLine(gridColor, Offset(paddingX, y), Offset(chartWidth, y), strokeWidth = 2f)
                 }
 
-                // Dibujar ejes
+                // dibujar ejes
                 drawLine(Color.Gray, Offset(paddingX, paddingY), Offset(paddingX, chartHeight), strokeWidth = 4f)
                 drawLine(Color.Gray, Offset(paddingX, chartHeight), Offset(chartWidth, chartHeight), strokeWidth = 4f)
 
-                // Dibujar etiquetas en el eje Y
+                // --------- Dibujar etiquetas en el eje y ---------------
                 val stepY = (maxY - minY) / 6
                 for (i in 0..6) {
                     val value = minY + (stepY * i)
@@ -176,7 +178,7 @@ fun LineChartCompose(exchangeRates: List<Moneda>) {
                     )
                 }
 
-                // Dibujar línea de la gráfica
+                // -----------------La linea de la grafica -------------------------------------
                 val path = Path().apply {
                     moveTo(paddingX + chartData.first().first, chartData.first().second)
                     for (point in chartData.drop(1)) {
@@ -185,7 +187,7 @@ fun LineChartCompose(exchangeRates: List<Moneda>) {
                 }
                 drawPath(path, color = Color.Blue, style = Stroke(width = 6f))
 
-                // Dibujar puntos
+                //------------- los puntos de los datos filtrados ------------------------------
                 chartData.forEachIndexed { index, point ->
                     val pointOffset = Offset(paddingX + point.first, point.second)
 
@@ -195,7 +197,7 @@ fun LineChartCompose(exchangeRates: List<Moneda>) {
                         center = pointOffset
                     )
 
-                    // Etiqueta cerca del punto seleccionado
+                    // --------- una etiqueta cerca del punto selecc -------
                     if (selectedPoint == index) {
                         val moneda = exchangeRates[index]
                         val labelText = moneda.syncDate
@@ -215,7 +217,7 @@ fun LineChartCompose(exchangeRates: List<Moneda>) {
             }
         }
 
-        // Información del punto seleccionado en un Card elegante
+        //---------------------- info de un punto seleccionado debajo de la grafica -----------------
         selectedPoint?.let { index ->
             val moneda = exchangeRates[index]
             val labelText = "1 (base) = ${moneda.currencyCode}: ${moneda.exchangeRate}"

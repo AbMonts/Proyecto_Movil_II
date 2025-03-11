@@ -5,8 +5,8 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.divisav2Cliente.Data.Modelo.Moneda
-import getAllExchanges
-import getFilteredExchanges
+import com.example.divisav2Cliente.ui.Screens.getAllExchanges
+import com.example.divisav2Cliente.ui.Screens.getFilteredExchanges
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -35,12 +35,12 @@ class ExchangeViewModel(application: Application) : AndroidViewModel(application
 
     fun consultarExchangeRatesFiltrados(moneda: String, fecha: Long) {
         viewModelScope.launch {
-            val fechaInicio = convertirFechaATimestampUTC(fecha, true)  // ← Convertimos a UTC
-            val fechaFin = convertirFechaATimestampUTC(fecha, false)   // ← Convertimos a UTC
+            val fechaInicio = convertirFechaATimestampUTC(fecha, true)
+            val fechaFin = convertirFechaATimestampUTC(fecha, false)
 
-            // Convierte a formato legible para depurar
+            // a formato utc
             val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-            sdf.timeZone = TimeZone.getTimeZone("UTC")  // ← Asegura que sea UTC
+            sdf.timeZone = TimeZone.getTimeZone("UTC")
 
             Log.d("ExchangeViewModel", "Consulta filtrada: moneda=$moneda")
             Log.d("ExchangeViewModel", "Fecha inicio: ${sdf.format(Date(fechaInicio))} ($fechaInicio)")
@@ -55,9 +55,7 @@ class ExchangeViewModel(application: Application) : AndroidViewModel(application
     }
 
 
-    /**
-     * Convierte un timestamp a la zona horaria CST y ajusta la hora al inicio o fin del día.
-     */
+
     fun convertirFechaATimestampUTC(fechaMillis: Long, esInicioDelDia: Boolean): Long {
         val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))  // ← CAMBIADO A UTC
         calendar.timeInMillis = fechaMillis

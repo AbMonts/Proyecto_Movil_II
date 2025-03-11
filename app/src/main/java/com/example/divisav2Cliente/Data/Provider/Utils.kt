@@ -1,8 +1,10 @@
+package com.example.divisav2Cliente.ui.Screens
+
+
 import android.content.Context
 import android.database.Cursor
 import android.net.Uri
 import android.util.Log
-
 import com.example.divisav2Cliente.Data.Modelo.Moneda
 
 const val AUTHORITY = "com.example.divisav2.provider"
@@ -33,7 +35,7 @@ fun getAllExchanges(context: Context): List<Moneda> {
         )
 
         cursor?.use {
-            Log.d("ExchangeData", "Número de registros obtenidos: ${it.count}")
+            Log.d("ExchangeData", "Numero de registros obtenidos: ${it.count}")
 
             val idIndex = it.getColumnIndex("id")
             val codeIndex = it.getColumnIndex("currency_code")
@@ -73,7 +75,6 @@ fun getFilteredExchanges(context: Context, currencyCode: String, fechaInicio: Lo
     val list = mutableListOf<Moneda>()
 
     try {
-        // Convertimos las fechas de milisegundos a segundos
         val fechaInicioSeg = fechaInicio / 1000
         val fechaFinSeg = fechaFin / 1000
 
@@ -83,7 +84,7 @@ fun getFilteredExchanges(context: Context, currencyCode: String, fechaInicio: Lo
 
         val uri = FILTERED_CONTENT_URI.buildUpon()
             .appendPath(currencyCode)
-            .appendPath(fechaInicioSeg.toString())  // Usamos los valores en segundos
+            .appendPath(fechaInicioSeg.toString())
             .appendPath(fechaFinSeg.toString())
             .build()
 
@@ -98,7 +99,7 @@ fun getFilteredExchanges(context: Context, currencyCode: String, fechaInicio: Lo
         )
 
         cursor?.use {
-            Log.d("getFilteredExchanges", "Número de registros obtenidos: ${it.count}")
+            Log.d("getFilteredExchanges", "Numero de registros obtenidos: ${it.count}")
 
             while (it.moveToNext()) {
                 val moneda = Moneda(

@@ -58,7 +58,7 @@ fun ExchangeScreen(viewModel: ExchangeViewModel, navController: NavController) {
             color = MaterialTheme.colorScheme.primary
         )
 
-        //la selec de la moneda y fecha
+        //------------------la selec de la moneda y fecha
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.medium,
@@ -100,7 +100,7 @@ fun ExchangeScreen(viewModel: ExchangeViewModel, navController: NavController) {
             }
         }
 
-        // los botones, buscar, actualizar
+        // ------------------------------los botones, buscar, actualizar
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
@@ -124,11 +124,13 @@ fun ExchangeScreen(viewModel: ExchangeViewModel, navController: NavController) {
         }
 
         // --------------------Lista de tasas de cambio -------------------------------------------------------
+
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(exchangeRates) { moneda ->
+            val sortedExchangeRates = exchangeRates.sortedByDescending { it.syncDate } // Ordena por fecha descendente
+            items(sortedExchangeRates) { moneda ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.medium,
