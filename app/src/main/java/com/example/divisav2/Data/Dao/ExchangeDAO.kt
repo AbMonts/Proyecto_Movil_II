@@ -45,6 +45,7 @@ interface ExchangeDAO {
     SELECT * FROM exchange_rates 
     WHERE currency_code = :currencyCode 
     AND timestamp BETWEEN :fechaInicio AND :fechaFin
+    ORDER BY timestamp DESC
 """)
     fun getFilteredExchangeRatesCursor(currencyCode: String, fechaInicio: Long, fechaFin: Long): Cursor
 

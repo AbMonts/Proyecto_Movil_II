@@ -61,7 +61,7 @@ class SyncExchangeWorker @AssistedInject constructor(
                 Log.d("SyncExchangeWorker", "sincrinizacion completada: ${monedas.size} monedas guardadas.")
 
                 repository.insertAll(monedas) // Guardar en la BD
-                Log.d("SyncExchangeWorker", "sincrinizacion completada: ${monedas.size} monedas guardadas.")
+                Log.d("SyncExchangeWorker", "Ya en la base de datos se tienen: ${monedas.size} monedas guardadas :0.")
             } catch (e: Exception) {
                 Log.e("SyncExchangeWorker", "Error obteniendo datos de la API", e)
                 throw e

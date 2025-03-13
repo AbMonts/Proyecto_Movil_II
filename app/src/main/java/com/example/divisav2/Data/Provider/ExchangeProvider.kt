@@ -17,7 +17,7 @@ import javax.inject.Inject
 class ExchangeProvider : ContentProvider() {
     companion object {
         const val AUTHORITY = "com.example.divisav2.provider"
-        //val CONTENT_URI: Uri = Uri.parse("content://$AUTHORITY/exchange_rates") //este va en el cliente :)
+        //val CONTENT_URI: Uri = Uri.parse("content://$AUTHORITY/exchange_rates") //este va en el cliente :D
 
         private const val CODE_EXCHANGE_RATE = 1
         private const val CODE_EXCHANGE_RATE_ID = 2
@@ -57,7 +57,7 @@ class ExchangeProvider : ContentProvider() {
             }
             CODE_EXCHANGE_RATE_FILTERED -> {
                 val segments = uri.pathSegments
-                if (segments.size < 5) { // Debe incluir 3 param: currency, fechaInicio, fechaFin
+                if (segments.size < 5) { //  currency, fechaInicio, fechaFin
                     throw IllegalArgumentException("Formato de URI inválido: $uri")
                 }
 

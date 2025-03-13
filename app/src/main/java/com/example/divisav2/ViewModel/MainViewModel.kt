@@ -53,21 +53,21 @@ class MainViewModel@Inject constructor(
     }
 
 
-//funcion para el worker que se ejecuta cada hora y llama a la api con el worker SyncExchangeWorker.kt
+//funcion para el worker que se ejecuta cada hora y llama a la api con el worker SyncExchangeWorker.kt :)
     fun scheduleHourlySync() {
         val workRequest = PeriodicWorkRequestBuilder<SyncExchangeWorker>(
             1, TimeUnit.HOURS // Se ejec cada 1 hora
         )
             .setConstraints(
                 Constraints.Builder()
-                    .setRequiredNetworkType(NetworkType.CONNECTED) // Solo si hay internet
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
                     .build()
             )
             .build()
 
         workManager.enqueueUniquePeriodicWork(
             "HourlySyncWorker",
-            ExistingPeriodicWorkPolicy.KEEP, // Evita duplicados
+            ExistingPeriodicWorkPolicy.KEEP,
             workRequest
         )
         Log.d("WorkManager", "Sincronizacion programada cada hora")
