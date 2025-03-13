@@ -207,4 +207,3 @@ fun getDateFormatter(syncDates: List<String>): ValueFormatter {
 }
 
 
-

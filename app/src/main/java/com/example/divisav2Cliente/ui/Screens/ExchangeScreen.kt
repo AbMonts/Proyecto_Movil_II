@@ -3,6 +3,7 @@ package com.example.divisav2Cliente.ui.Screens
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
+import android.util.Log
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.foundation.layout.*
@@ -17,6 +18,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
 import com.example.divisav2Cliente.Data.Modelo.Moneda
 import com.example.divisav2Cliente.ui.viewmodel.ExchangeViewModel
+
 
 @Composable
 fun ExchangeScreen(viewModel: ExchangeViewModel, navController: NavController) {
@@ -35,6 +37,7 @@ fun ExchangeScreen(viewModel: ExchangeViewModel, navController: NavController) {
     fun showDateTimePicker(context: Context, fechaActual: Long, onDateTimeSelected: (Long) -> Unit) {
         val calendar = Calendar.getInstance()
         calendar.timeInMillis = fechaActual
+
 
         // Primero, seleccionamos la fecha
         DatePickerDialog(
@@ -109,7 +112,7 @@ fun ExchangeScreen(viewModel: ExchangeViewModel, navController: NavController) {
                         }
                     }
                 }
-                    // ----------------------------- Seleccion de fecha y hora ---------------------------------------------------
+                // ----------------------------- Seleccion de fecha y hora ---------------------------------------------------
                 Text("Desde la Fecha y hora de:", style = MaterialTheme.typography.bodyMedium)
                 ElevatedButton(
                     onClick = { showDateTimePicker(context, fechaInicioMillis) { fechaInicioMillis = it } },
@@ -128,7 +131,7 @@ fun ExchangeScreen(viewModel: ExchangeViewModel, navController: NavController) {
 
             }
         }
-            // --------------------------------- Boton para buscar y mostrar la grafica -------------------------------------------
+        // --------------------------------- Boton para buscar y mostrar la grafica -------------------------------------------
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
@@ -159,7 +162,9 @@ fun ExchangeScreen(viewModel: ExchangeViewModel, navController: NavController) {
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            val sortedExchangeRates = exchangeRates.sortedByDescending { it.syncDate } // Ordena por fecha descendente
+            //Log.d("ExchangeScreen", "Before sorting: ${exchangeRates.map { it.timestamp }}")
+            val sortedExchangeRates = exchangeRates.sortedByDescending { it.timestamp }
+            //Log.d("ExchangeScreen", "After sorting: ${sortedExchangeRates.map { it.timestamp }}")
             items(sortedExchangeRates) { moneda ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
