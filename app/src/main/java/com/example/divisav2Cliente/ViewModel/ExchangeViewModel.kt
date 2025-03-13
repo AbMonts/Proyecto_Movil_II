@@ -33,12 +33,12 @@ class ExchangeViewModel(application: Application) : AndroidViewModel(application
     }
 
 
-    fun consultarExchangeRatesFiltrados(moneda: String, fecha: Long) {
+    fun consultarExchangeRatesFiltrados(moneda: String, fechaInicioMillis: Long, fechaFinMillis: Long) {
         viewModelScope.launch {
-            val fechaInicio = convertirFechaATimestampUTC(fecha, true)
-            val fechaFin = convertirFechaATimestampUTC(fecha, false)
+            val fechaInicio = convertirFechaATimestampUTC(fechaInicioMillis, true)
+            val fechaFin = convertirFechaATimestampUTC(fechaFinMillis, false)
 
-            // a formato utc
+            // Convertir a formato UTC legible para depuración
             val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
             sdf.timeZone = TimeZone.getTimeZone("UTC")
 
@@ -46,13 +46,20 @@ class ExchangeViewModel(application: Application) : AndroidViewModel(application
             Log.d("ExchangeViewModel", "Fecha inicio: ${sdf.format(Date(fechaInicio))} ($fechaInicio)")
             Log.d("ExchangeViewModel", "Fecha fin: ${sdf.format(Date(fechaFin))} ($fechaFin)")
 
-            val resultados = getFilteredExchanges(getApplication<Application>().applicationContext, moneda, fechaInicio, fechaFin)
+            val resultados = getFilteredExchanges(
+                getApplication<Application>().applicationContext,
+                moneda,
+                fechaInicio,
+                fechaFin
+            )
 
             Log.d("ExchangeViewModel", "Consulta filtrada: ${resultados.size} registros")
             resultados.forEach { Log.d("ExchangeViewModel", "Registro obtenido: $it") }
+
             _exchangeRates.emit(resultados)
         }
     }
+
 
 
 

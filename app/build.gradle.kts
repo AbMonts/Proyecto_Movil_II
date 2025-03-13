@@ -57,6 +57,8 @@ android {
     }
 }
 
+
+
 dependencies {
     val room_version = "2.6.1"
 
@@ -82,6 +84,7 @@ dependencies {
     implementation("androidx.hilt:hilt-work:1.2.0")
 
     kapt ("androidx.hilt:hilt-compiler:1.0.0")
+    implementation("androidx.compose.material3:material3:1.2.0") // Compose Material 3
 
 //nav
     val nav_version = "2.8.8"
@@ -89,6 +92,8 @@ dependencies {
     // Jetpack Compose integration
     implementation("androidx.navigation:navigation-compose:$nav_version")
 
+    //para la grafica bonita
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

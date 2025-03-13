@@ -1,9 +1,6 @@
 
 package com.example.divisav2Cliente.ui.Screens
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Box
+import android.view.ViewGroup
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,29 +16,36 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.semantics.Role.Companion.Button
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
 import com.example.divisav2Cliente.Data.Modelo.Moneda
 import com.example.divisav2Cliente.ui.viewmodel.ExchangeViewModel
+import com.github.mikephil.charting.charts.LineChart
+import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.data.LineData
+import com.github.mikephil.charting.data.LineDataSet
+import com.github.mikephil.charting.utils.ColorTemplate
+import android.graphics.Color
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.github.mikephil.charting.formatter.ValueFormatter
+import com.github.mikephil.charting.highlight.Highlight
+import com.github.mikephil.charting.listener.OnChartValueSelectedListener
 import java.text.SimpleDateFormat
 import java.util.Locale
+
+import java.util.Date
 
 @Composable
 fun GraficoScreen(viewModel: ExchangeViewModel, navController: NavController) {
     val exchangeRates by viewModel.exchangeRates.collectAsState()
+    var selectedMoneda by remember { mutableStateOf<Moneda?>(null) }
 
     Column(
         modifier = Modifier
@@ -49,7 +53,7 @@ fun GraficoScreen(viewModel: ExchangeViewModel, navController: NavController) {
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // ------------encabezado con el tipo de cambio -----------------------
+        // Encabezado con tipo de cambio
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -70,10 +74,9 @@ fun GraficoScreen(viewModel: ExchangeViewModel, navController: NavController) {
             )
         }
 
-
         Spacer(modifier = Modifier.height(10.dp))
 
-        // ------------- boton para volver a Exchangescreen.kt --------------------------------
+        // boton para volver
         Button(
             onClick = { navController.popBackStack() },
             modifier = Modifier.align(Alignment.Start)
@@ -83,9 +86,11 @@ fun GraficoScreen(viewModel: ExchangeViewModel, navController: NavController) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // ------------ aca se mostrara la grafica con los datos filtrados
+        // la grafica a mostrar
         if (exchangeRates.isNotEmpty()) {
-            LineChartCompose(exchangeRates)
+            LineChartView(exchangeRates) { moneda ->
+                selectedMoneda = moneda
+            }
         } else {
             Text(
                 text = "No hay datos disponibles",
@@ -93,163 +98,113 @@ fun GraficoScreen(viewModel: ExchangeViewModel, navController: NavController) {
                 style = MaterialTheme.typography.bodyLarge
             )
         }
+
+        // Mostrar datos en un TextField si hay un punto seleccionado
+        selectedMoneda?.let { moneda ->
+            Spacer(modifier = Modifier.height(20.dp))
+            Text(
+                text = "Detalles del punto seleccionado:",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            androidx.compose.material3.OutlinedTextField(
+                value = """
+                    Código: ${moneda.currencyCode}
+                    Tasa: ${moneda.exchangeRate}
+                    Base: ${moneda.baseCurrency}
+                    Fecha: ${moneda.syncDate}
+                """.trimIndent(),
+                onValueChange = {},
+                modifier = Modifier.fillMaxWidth(),
+                readOnly = true
+            )
+        }
     }
 }
 
-//--------- ----------------- funci para construir la grafica (con datos filtrados)  ----------------
 @Composable
-fun LineChartCompose(exchangeRates: List<Moneda>) {
-    val paddingX = 100f
-    val paddingY = 80f
-    val chartWidth = 1000f
-    val chartHeight = 600f
-
-    val maxX = (exchangeRates.size - 1).coerceAtLeast(1).toFloat()
-    val maxY = (exchangeRates.maxOfOrNull { it.exchangeRate }?.toFloat() ?: 1f) * 1.1f
-    val minY = 0f
-
-    val chartData = exchangeRates.mapIndexed { index, moneda ->
-        val normalizedX = (index.toFloat() / maxX) * (chartWidth - paddingX)
-        val normalizedY = ((moneda.exchangeRate.toFloat() - minY) / (maxY - minY)) * (chartHeight - paddingY)
-        normalizedX to chartHeight - normalizedY
-    }
-
-
-    var selectedPoint by remember { mutableStateOf<Int?>(null) }
-
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(600.dp)
-                .padding(16.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Canvas(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .pointerInput(Unit) {
-                        detectTapGestures(
-                            onPress = { offset ->
-                                val tappedIndex = chartData.indexOfFirst { (x, y) ->
-                                    val dx = (paddingX + x) - offset.x
-                                    val dy = y - offset.y
-                                    dx * dx + dy * dy <= 400
-                                }
-                                selectedPoint = if (tappedIndex != -1) tappedIndex else null
-                            }
-                        )
-                    }
-            ) {
-                // ---------------------------- fondo cuadriculado -----------------------------------
-                val gridColor = Color.LightGray
-                val gridSpacingX = (chartWidth - paddingX) / 5
-                val gridSpacingY = (chartHeight - paddingY) / 6
-
-                for (i in 0..5) {
-                    val x = paddingX + i * gridSpacingX
-                    drawLine(gridColor, Offset(x, paddingY), Offset(x, chartHeight), strokeWidth = 2f)
-                }
-
-                for (i in 0..6) {
-                    val y = chartHeight - i * gridSpacingY
-                    drawLine(gridColor, Offset(paddingX, y), Offset(chartWidth, y), strokeWidth = 2f)
-                }
-
-                // dibujar ejes
-                drawLine(Color.Gray, Offset(paddingX, paddingY), Offset(paddingX, chartHeight), strokeWidth = 4f)
-                drawLine(Color.Gray, Offset(paddingX, chartHeight), Offset(chartWidth, chartHeight), strokeWidth = 4f)
-
-                // --------- Dibujar etiquetas en el eje y ---------------
-                val stepY = (maxY - minY) / 6
-                for (i in 0..6) {
-                    val value = minY + (stepY * i)
-                    val yOffset = chartHeight - ((value - minY) / (maxY - minY)) * (chartHeight - paddingY)
-                    drawContext.canvas.nativeCanvas.drawText(
-                        "%.2f".format(value),
-                        30f, yOffset,
-                        android.graphics.Paint().apply {
-                            textSize = 35f
-                            color = android.graphics.Color.BLACK
-                        }
-                    )
-                }
-
-                // -----------------La linea de la grafica -------------------------------------
-                val path = Path().apply {
-                    moveTo(paddingX + chartData.first().first, chartData.first().second)
-                    for (point in chartData.drop(1)) {
-                        lineTo(paddingX + point.first, point.second)
-                    }
-                }
-                drawPath(path, color = Color.Blue, style = Stroke(width = 6f))
-
-                //------------- los puntos de los datos filtrados ------------------------------
-                chartData.forEachIndexed { index, point ->
-                    val pointOffset = Offset(paddingX + point.first, point.second)
-
-                    drawCircle(
-                        color = if (selectedPoint == index) Color.Green else Color.Red,
-                        radius = 10f,
-                        center = pointOffset
-                    )
-
-                    // --------- una etiqueta cerca del punto selecc -------
-                    if (selectedPoint == index) {
-                        val moneda = exchangeRates[index]
-                        val labelText = moneda.syncDate
-
-                        drawContext.canvas.nativeCanvas.drawText(
-                            labelText,
-                            pointOffset.x + 20f,
-                            pointOffset.y - 20f,
-                            android.graphics.Paint().apply {
-                                textSize = 35f
-                                color = android.graphics.Color.BLACK
-                                textAlign = android.graphics.Paint.Align.LEFT
-                            }
-                        )
-                    }
-                }
-            }
-        }
-
-        //---------------------- info de un punto seleccionado debajo de la grafica -----------------
-        selectedPoint?.let { index ->
-            val moneda = exchangeRates[index]
-            val labelText = "1 (base) = ${moneda.currencyCode}: ${moneda.exchangeRate}"
-
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+fun LineChartView(
+    exchangeRates: List<Moneda>,
+    onPointSelected: (Moneda) -> Unit
+) {
+    AndroidView(
+        factory = { context ->
+            LineChart(context).apply {
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
                 )
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Moneda: ${moneda.currencyCode} | Tasa: ${moneda.exchangeRate} | Fecha: ${moneda.syncDate}",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = labelText,
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
-            }
-        }
 
+                description.isEnabled = false
+                setTouchEnabled(true)
+                setPinchZoom(true)
+                setDrawGridBackground(false)
+
+                // Configurar eje X para mostrar fechas legibles
+                xAxis.apply {
+                    position = XAxis.XAxisPosition.BOTTOM
+                    setDrawGridLines(false)
+                    granularity = 1f // Evita valores intermedios incorrectos
+                    textColor = Color.BLACK
+                    labelRotationAngle = -45f // Rotar etiquetas para mejor visibilidad
+                }
+
+                axisLeft.apply {
+                    setDrawGridLines(true)
+                    textColor = Color.BLACK
+                }
+                axisRight.isEnabled = false
+
+                // Listener para seleccionar un punto en la gráfica
+                setOnChartValueSelectedListener(object : OnChartValueSelectedListener {
+                    override fun onValueSelected(e: Entry?, h: Highlight?) {
+                        e?.let { entry ->
+                            val index = entry.x.toInt()
+                            if (index in exchangeRates.indices) {
+                                onPointSelected(exchangeRates[index])
+                            }
+                        }
+                    }
+
+                    override fun onNothingSelected() {}
+                })
+            }
+        },
+        update = { chart ->
+            val entries = exchangeRates.mapIndexed { index, moneda ->
+                Entry(index.toFloat(), moneda.exchangeRate.toFloat()) // Usar índice como posición en X
+            }
+
+            val syncDates = exchangeRates.map { it.syncDate } // Extraer fechas legibles
+            chart.xAxis.valueFormatter = getDateFormatter(syncDates) // Asignar formateador de fechas
+
+            val dataSet = LineDataSet(entries, "Tasa de Cambio").apply {
+                setColors(ColorTemplate.JOYFUL_COLORS.toList())
+                valueTextColor = Color.BLACK
+                lineWidth = 2f
+                circleRadius = 4f
+                setDrawCircleHole(false)
+                setDrawValues(true)
+            }
+
+            chart.data = LineData(dataSet)
+            chart.invalidate() // Refrescar la gráfica
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(300.dp)
+    )
+}
+
+
+fun getDateFormatter(syncDates: List<String>): ValueFormatter {
+    return object : ValueFormatter() {
+        override fun getFormattedValue(value: Float): String {
+            val index = value.toInt()
+            return syncDates.getOrNull(index) ?: "-" // Evita errores por valores fuera de rango
+        }
     }
 }
+
+
+

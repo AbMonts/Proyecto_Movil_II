@@ -7,9 +7,9 @@ import android.net.Uri
 import android.util.Log
 import com.example.divisav2Cliente.Data.Modelo.Moneda
 
-const val AUTHORITY = "com.example.divisav2.provider"
+const val AUTHORITY = "com.example.divisav2.provider" //a ruta a los datos
 val CONTENT_URI: Uri = Uri.parse("content://$AUTHORITY/exchange_rates")
-val FILTERED_CONTENT_URI: Uri = Uri.parse("content://com.example.divisav2.provider/exchange_rates/filtered")
+val FILTERED_CONTENT_URI: Uri = Uri.parse("content://$AUTHORITY/exchange_rates/filtered")
 
 fun getAllExchanges(context: Context): List<Moneda> {
     val list = mutableListOf<Moneda>()
